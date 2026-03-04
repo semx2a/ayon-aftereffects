@@ -8,6 +8,7 @@ from .publish_plugins import (
 )
 from .workfile_builder import WorkfileBuilderPlugin
 from .templated_workfile_build import TemplatedWorkfileBuildModel
+from .scripts_config import ScriptList
 
 
 class AfterEffectsSettings(BaseSettingsModel):
@@ -34,6 +35,10 @@ class AfterEffectsSettings(BaseSettingsModel):
     templated_workfile_build: TemplatedWorkfileBuildModel = SettingsField(
         default_factory=TemplatedWorkfileBuildModel,
         title="Templated Workfile Build Settings",
+    )
+    script_list: ScriptList = SettingsField(
+        default_factory=ScriptList,
+        title="Scripts",
     )
 
 
