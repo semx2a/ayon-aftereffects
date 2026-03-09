@@ -8,6 +8,7 @@ from ayon_core.pipeline import (
 )
 from ayon_core.lib import prepare_template_data
 from ayon_core.pipeline.create import PRODUCT_NAME_ALLOWED_SYMBOLS
+
 from ayon_aftereffects import api
 from ayon_aftereffects.api.pipeline import cache_and_get_instances
 from ayon_aftereffects.api.lib import set_settings
@@ -21,10 +22,11 @@ class RenderCreator(Creator):
     """
     identifier = "render"
     label = "Render"
-    product_type = "render"
     product_base_type = "render"
+    product_type = product_base_type
     description = "Render creator"
     icon = "eye"
+    settings_category = "aftereffects"
 
     create_allow_context_change = True
 
@@ -98,11 +100,15 @@ class RenderCreator(Creator):
             if self.rename_comp_to_product_name:
                 data["orig_comp_name"] = composition_name
 
+            product_type = data.get("productType")
+            if not product_type:
+                product_type = self.product_base_type
             new_instance = CreatedInstance(
-                self.product_base_type,
-                comp_product_name,
-                data,
-                self
+                product_base_type=self.product_base_type,
+                product_type=product_type,
+                product_name=comp_product_name,
+                data=data,
+                creator=self,
             )
 
             api.get_stub().imprint(new_instance.id,
@@ -130,6 +136,11 @@ class RenderCreator(Creator):
                     comp_ids=[comp.id],
                     print_msg=False,
                     entity=entity)
+            self._ensure_comp_in_render_queue(
+                stub=stub,
+                comp_id=comp.id,
+                comp_name=comp_product_name
+            )
 
     def get_pre_create_attr_defs(self):
         output = [
@@ -166,6 +177,31 @@ class RenderCreator(Creator):
                 default=False
             )
         ]
+
+    def _ensure_comp_in_render_queue(
+        self, stub: object, comp_id: int, comp_name: str
+    ) -> None:
+        """Ensure composition is present in After Effects render queue.
+
+        Args:
+            stub (object): Connected After Effects server stub.
+            comp_id (int): Composition item id in After Effects.
+            comp_name (str): Composition/product name for readable errors.
+
+        Raises:
+            CreatorError: When composition cannot be queued.
+        """
+        try:
+            queued = stub.add_comp_to_render_queue(comp_id)
+        except ValueError as exc:
+            raise CreatorError(
+                f"Failed to add '{comp_name}' to render queue: {exc}"
+            ) from exc
+
+        if not queued:
+            raise CreatorError(
+                f"Failed to add '{comp_name}' to render queue."
+            )
 
     def collect_instances(self):
         for instance_data in cache_and_get_instances(self):
@@ -211,23 +247,6 @@ class RenderCreator(Creator):
                         new_comp_name = "dummyCompName"
                     api.get_stub().rename_item(comp_id,
                                                new_comp_name)
-
-    def apply_settings(self, project_settings):
-        plugin_settings = (
-            project_settings["aftereffects"]["create"]["RenderCreator"]
-        )
-
-        self.mark_for_review = plugin_settings["mark_for_review"]
-        self.default_variants = plugin_settings.get(
-            "default_variants",
-            plugin_settings.get("defaults") or []
-        )
-        self.rename_comp_to_product_name = plugin_settings.get(
-            "rename_comp_to_product_name", self.rename_comp_to_product_name
-        )
-        self.force_setting_values = plugin_settings.get(
-            "force_setting_values", self.force_setting_values
-        )
 
     def get_detail_description(self):
         return """Creator for Render instances

@@ -6,20 +6,22 @@ from ayon_aftereffects import api
 
 
 class FileLoader(api.AfterEffectsLoader):
-    """Load images
+    """Load images and full AE workfiles.
 
     Stores the imported product version in a container named after the folder.
     """
     label = "Load file"
 
-    product_types = {
+    product_base_types = {
         "image",
         "plate",
         "render",
         "prerender",
         "review",
         "audio",
+        "workfile",
     }
+    product_types = product_base_types
     representations = {"*"}
 
     def load(self, context, name=None, namespace=None, data=None):
