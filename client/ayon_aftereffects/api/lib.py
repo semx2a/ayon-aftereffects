@@ -27,7 +27,7 @@ def maintained_selection():
 
 def get_extension_manifest_path():
     return os.path.join(
-        os.path.dirname(os.path.abspath(__file__)),f
+        os.path.dirname(os.path.abspath(__file__)),
         "extension",
         "CSXS",
         "manifest.xml"
