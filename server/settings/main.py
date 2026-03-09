@@ -58,4 +58,5 @@ DEFAULT_AFTEREFFECTS_SETTING = {
         "custom_templates": [],
     },
     "templated_workfile_build": {"profiles": []},
+    "scripts": {"paths": []},
 }
