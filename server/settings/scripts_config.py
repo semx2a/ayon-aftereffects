@@ -12,13 +12,13 @@ class ScriptConfigModel(BaseSettingsModel):
 
     _layout = "expanded"
     active: bool = SettingsField(True)
-    name: list[str] = SettingsField(default_factory=list, title="Script name")
+    name: str = SettingsField(default_factory=str, title="Script name")
     path: MultiplatformPathModel = SettingsField(
         default_factory=MultiplatformPathModel
     )
 
     @validator("name")
-    def normalize_value(cls, value):
+    def normalize_value(cls, value: str) -> str:
         return normalize_name(value)
 
 

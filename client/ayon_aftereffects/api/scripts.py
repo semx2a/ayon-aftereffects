@@ -4,27 +4,27 @@ import os
 import platform
 
 from ayon_core.lib import Logger, StringTemplate
+from ayon_core.pipeline import Anatomy
 from ayon_core.pipeline.context_tools import (
     get_current_context_template_data,
     get_current_project_settings,
 )
+from ayon_server.graphql.resolvers.common import resolve
+
+from .ws_stub import ConnectionNotEstablishedYet, get_stub
 
 log = Logger.get_logger("ayon_aftereffects.scripts")
 
 
 def resolve_scripts() -> list[str]:
-    """Resolve active script paths from launch context settings.
-
-    Args:
-        None
+    """Resolve active post-launch JSX scripts from project settings.
 
     Returns:
-        Ordered list of existing absolute script paths.
+        Ordered list of existing absolute JSX paths.
     """
 
     current_os = platform.system().lower()
 
-    # load configuration of houdini shelves
     project_settings = get_current_project_settings()
     scripts_config = project_settings["aftereffects"]["scripts"]
     paths = scripts_config["paths"]
@@ -34,42 +34,62 @@ def resolve_scripts() -> list[str]:
         return []
 
     resolved_paths: list[str] = []
-    for path in paths:
-        if not path.get("active", True):
+    for script_item in paths:
+        if not script_item.get("active", True):
             continue
 
-        raw_path = path["path"][current_os]
+        raw_path = script_item["path"][current_os]
         if not raw_path:
             continue
 
-        path = resolve_path(raw_path)
-        if not path:
+        resolved_path = resolve_path(raw_path)
+        if not resolved_path:
             continue
 
-        resolved_paths.append(path)
+        if not resolved_path.lower().endswith(".jsx"):
+            log.warning(
+                f"Skipping unsupported post-launch script: {resolved_path}",
+            )
+            continue
+
+        if not os.path.isfile(resolved_path):
+            log.warning(
+                f"Post-launch JSX script does not exist: {resolved_path}",
+            )
+            continue
+
+        resolved_paths.append(resolved_path)
 
     return resolved_paths
 
 
 def resolve_path(path):
-    try:
-        # Get template data from context_tools
-        template_data = get_current_context_template_data()
+    """Resolve a templated script path against current AYON context."""
+    template_data = get_current_context_template_data()
+    template_data.update(os.environ)
 
-        # Add environment variables
-        template_data.update(os.environ)
+    project_name = template_data["project"]["name"]
+    anatomy = Anatomy(project_name)
+    template_data["root"] = anatomy.roots
 
-        project_name = template_data["project"]["name"]
-        anatomy = Anatomy(project_name)
-        template_data["root"] = anatomy.roots
-
-        # Format template
-        result = StringTemplate.format_template(path, template_data)
-
-        if result.solved:
-            path = result.normalized()
-            return anatomy.path_remapper(path) or path
-    except Exception as e:
-        raise e
+    result = StringTemplate.format_template(path, template_data)
+    if result.solved:
+        path = result.normalized()
+        return anatomy.path_remapper(path) or path
 
     return path
+
+
+def run_scripts() -> None:
+    """Run jsx scripts in the current AfterEffects host"""
+    try:
+        stub = get_stub()
+    except ConnectionNotEstablishedYet:
+        log.warning(
+            "After Effects client is not connecte. Skipping jsx script launch."
+        )
+
+    resolved_scripts = resolve_scripts()
+    for script in resolved_scripts:
+        log.info(f"Running post-launch JSX sctipt: {script}")
+        stub.run_jsx_file(script)

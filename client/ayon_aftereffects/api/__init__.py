@@ -25,6 +25,8 @@ from .plugin import (
     AfterEffectsLoader
 )
 
+from .scripts import resolve_scripts
+
 
 __all__ = [
     # ws_stub
@@ -42,5 +44,8 @@ __all__ = [
     "set_settings",
 
     # plugin
-    "AfterEffectsLoader"
+    "AfterEffectsLoader",
+
+    # scripts
+    "resolve_scripts"
 ]

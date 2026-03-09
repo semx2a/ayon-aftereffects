@@ -22,6 +22,7 @@ from ayon_core.tools.utils import host_tools, get_ayon_qt_app
 from .webserver import WebServerTool
 from .ws_stub import get_stub
 from .lib import set_settings
+from .scripts import run_scripts
 
 log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)
@@ -49,6 +50,7 @@ def main(*subprocess_args):
 
     launcher = ProcessLauncher(subprocess_args)
     launcher.start()
+    launcher.execute_in_main_thread(run_scripts)
 
     env_workfiles_on_launch = os.getenv(
         "AYON_AFTEREFFECTS_WORKFILES_ON_LAUNCH",
