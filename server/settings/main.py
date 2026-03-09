@@ -36,7 +36,7 @@ class AfterEffectsSettings(BaseSettingsModel):
         default_factory=TemplatedWorkfileBuildModel,
         title="Templated Workfile Build Settings",
     )
-    script_list: ScriptList = SettingsField(
+    scripts: ScriptList = SettingsField(
         default_factory=ScriptList,
         title="Scripts",
     )

@@ -25,6 +25,6 @@ class ScriptConfigModel(BaseSettingsModel):
 class ScriptList(BaseSettingsModel):
     """Workfile template builder with dynamic items via Placeholders"""
 
-    profiles: list[ScriptConfigModel] = SettingsField(
+    paths: list[ScriptConfigModel] = SettingsField(
         default_factory=list, title="Scripts"
     )
