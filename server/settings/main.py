@@ -8,7 +8,7 @@ from .publish_plugins import (
 )
 from .workfile_builder import WorkfileBuilderPlugin
 from .templated_workfile_build import TemplatedWorkfileBuildModel
-from .scripts_config import ScriptList
+from .scripts import Scripts
 
 
 class AfterEffectsSettings(BaseSettingsModel):
@@ -17,7 +17,7 @@ class AfterEffectsSettings(BaseSettingsModel):
     auto_install_extension: bool = SettingsField(
         False,
         title="Install AYON Extension",
-        description="Triggers pre-launch hook which installs extension."
+        description="Triggers pre-launch hook which installs extension.",
     )
 
     imageio: AfterEffectsImageIOModel = SettingsField(
@@ -36,8 +36,8 @@ class AfterEffectsSettings(BaseSettingsModel):
         default_factory=TemplatedWorkfileBuildModel,
         title="Templated Workfile Build Settings",
     )
-    scripts: ScriptList = SettingsField(
-        default_factory=ScriptList,
+    scripts: Scripts = SettingsField(
+        default_factory=Scripts,
         title="Scripts",
     )
 
@@ -58,5 +58,5 @@ DEFAULT_AFTEREFFECTS_SETTING = {
         "custom_templates": [],
     },
     "templated_workfile_build": {"profiles": []},
-    "scripts": {"paths": []},
+    "scripts": {"configs": []},
 }

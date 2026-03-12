@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import os
-import platform
 
 from ayon_core.lib import Logger, StringTemplate
 from ayon_core.pipeline import Anatomy
@@ -9,36 +8,33 @@ from ayon_core.pipeline.context_tools import (
     get_current_context_template_data,
     get_current_project_settings,
 )
-from ayon_server.graphql.resolvers.common import resolve
 
 from .ws_stub import ConnectionNotEstablishedYet, get_stub
 
 log = Logger.get_logger("ayon_aftereffects.scripts")
 
 
-def resolve_scripts() -> list[str]:
+def resolve_scripts(auto: bool = True) -> list[str]:
     """Resolve active post-launch JSX scripts from project settings.
 
     Returns:
         Ordered list of existing absolute JSX paths.
     """
 
-    current_os = platform.system().lower()
-
     project_settings = get_current_project_settings()
-    scripts_config = project_settings["aftereffects"]["scripts"]
-    paths = scripts_config["paths"]
+    scripts_setting = project_settings["aftereffects"]["scripts"]
+    configs = scripts_setting["configs"]
 
-    if not paths:
+    if not configs:
         log.debug("No scripts found in project settings.")
         return []
 
     resolved_paths: list[str] = []
-    for script_item in paths:
-        if not script_item.get("active", True):
+    for script_item in configs:
+        if not script_item.get("auto") == auto:
             continue
 
-        raw_path = script_item["path"][current_os]
+        raw_path = script_item["path"]
         if not raw_path:
             continue
 
@@ -80,7 +76,7 @@ def resolve_path(path):
     return path
 
 
-def run_scripts() -> None:
+def run_scripts(auto: bool = True) -> None:
     """Run jsx scripts in the current AfterEffects host"""
     try:
         stub = get_stub()
@@ -89,7 +85,7 @@ def run_scripts() -> None:
             "After Effects client is not connecte. Skipping jsx script launch."
         )
 
-    resolved_scripts = resolve_scripts()
+    resolved_scripts = resolve_scripts(auto)
     for script in resolved_scripts:
-        log.info(f"Running post-launch JSX sctipt: {script}")
+        log.debug(f"Running post-launch JSX script: {script}")
         stub.run_jsx_file(script)
