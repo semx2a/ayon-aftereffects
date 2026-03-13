@@ -4,7 +4,6 @@
 """
 import json
 import logging
-from typing import Any
 
 import attr
 from wsrpc_aiohttp import WebSocketAsync
@@ -23,27 +22,27 @@ class AEItem(object):
         but contains same fields, which are being used in later processing.
     """
     # metadata
-    id: Any = attr.ib()  # id created by AE, could be used for querying
-    name: str | None = attr.ib()  # name of item
-    item_type: str | None = attr.ib(default=None)  # footage, folder, comp
+    id = attr.ib()  # id created by AE, could be used for querying
+    name = attr.ib()  # name of item
+    item_type = attr.ib(default=None)  # footage, folder, comp
     # all imported elements, single for
     # regular image, array for Backgrounds
-    members: list[Any] = attr.ib(factory=list)
-    frameStart: Any = attr.ib(default=None)
-    framesDuration: Any = attr.ib(default=None)
-    frameRate: Any = attr.ib(default=None)
-    file_name: str | None = attr.ib(default=None)
-    instance_id: str | None = attr.ib(default=None)  # New Publisher
-    width: int | None = attr.ib(default=None)
-    height: int | None = attr.ib(default=None)
-    is_placeholder: bool = attr.ib(default=False)
-    uuid: Any = attr.ib(default=False)
-    path: Any = attr.ib(default=False)  # path to FootageItem to validate
+    members = attr.ib(factory=list)
+    frameStart = attr.ib(default=None)
+    framesDuration = attr.ib(default=None)
+    frameRate = attr.ib(default=None)
+    file_name = attr.ib(default=None)
+    instance_id = attr.ib(default=None)  # New Publisher
+    width = attr.ib(default=None)
+    height = attr.ib(default=None)
+    is_placeholder = attr.ib(default=False)
+    uuid = attr.ib(default=False)
+    path = attr.ib(default=False)  # path to FootageItem to validate
     # list of composition Footage is in
-    containing_comps: list[Any] = attr.ib(factory=list)
+    containing_comps = attr.ib(factory=list)
 
 
-class AfterEffectsServerStub:
+class AfterEffectsServerStub():
     """Stub for calling function on client (After Effects js) side.
 
     Expects that client is already connected (started when AYON menu is opened)

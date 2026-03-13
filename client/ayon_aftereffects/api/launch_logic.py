@@ -17,11 +17,12 @@ from qtpy import QtCore
 from ayon_core.lib import Logger, is_in_tests, env_value_to_bool
 from ayon_core.pipeline import install_host
 from ayon_core.addon import AddonsManager
-from ayon_core.tools.utils import host_tools, get_ayon_qt_app
+from ayon_core.tools.utils import get_ayon_qt_app
 
 from .webserver import WebServerTool
 from .ws_stub import get_stub
 from .lib import set_settings
+from ayon_aftereffects.api import ae_host_tools
 from .scripts import run_scripts
 
 log = logging.getLogger(__name__)
@@ -77,7 +78,7 @@ def main(*subprocess_args):
             save = True
 
         launcher.execute_in_main_thread(
-            lambda: host_tools.show_tool_by_name("workfiles", save=save)
+           lambda: ae_host_tools.show_tool_by_name("workfiles", save=save)
         )
 
     sys.exit(app.exec_())
@@ -88,7 +89,7 @@ def show_tool_by_name(tool_name):
     if tool_name == "loader":
         kwargs["use_context"] = True
 
-    host_tools.show_tool_by_name(tool_name, **kwargs)
+    ae_host_tools.show_tool_by_name(tool_name, **kwargs)
 
 
 def show_script_editor():
@@ -406,6 +407,14 @@ class AfterEffectsRoute(WebSocketRoute):
 
     async def script_editor_route(self):
         ProcessLauncher.execute_in_main_thread(show_script_editor)
+
+        # Required return statement.
+        return "nothing"
+
+    async def run_scripts_route(self):
+        ProcessLauncher.execute_in_main_thread(
+            ae_host_tools.show_run_scripts_tool
+        )
 
         # Required return statement.
         return "nothing"
