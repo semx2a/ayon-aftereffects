@@ -57,7 +57,7 @@ class AfterEffectsHost(HostBase, IWorkfileHost, ILoadHost, IPublishHost):
         try:
             stub = get_stub()  # only after Photoshop is up
         except ConnectionNotEstablishedYet:
-            log.error("Not connected yet, ignoring")
+            log.debug("Not connected yet, ignoring")
             return
 
         self._stub = stub
@@ -93,7 +93,7 @@ class AfterEffectsHost(HostBase, IWorkfileHost, ILoadHost, IPublishHost):
             if full_name and full_name != "null":
                 return os.path.normpath(full_name).replace("\\", "/")
         except ValueError:
-            log.error("Nothing opened")
+            log.debug("Nothing opened")
             pass
 
         return None
@@ -202,7 +202,7 @@ def ls():
     try:
         stub = get_stub()  # only after AfterEffects is up
     except ConnectionNotEstablishedYet:
-        log.warn("Not connected yet, ignoring")
+        log.warning("Not connected yet, ignoring")
         return
 
     layers_meta = stub.get_metadata()
