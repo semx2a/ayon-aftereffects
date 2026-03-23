@@ -1,5 +1,3 @@
-from typing import ClassVar, Optional
-
 from ayon_core.tools.utils.host_tools import HostToolsHelper
 from ayon_core.tools.utils.lib import qt_app_context
 
@@ -75,47 +73,26 @@ class AEHostToolsHelper(HostToolsHelper):
         super().show_tool_by_name(tool_name, parent, *args, **kwargs)
 
 
-class _SingletonPoint:
-    """Singleton access point for After Effects host tools."""
+_helper = None
 
-    helper: ClassVar[Optional[AEHostToolsHelper]] = None
 
-    @classmethod
-    def _create_helper(cls) -> AEHostToolsHelper:
-        if cls.helper is None:
-            cls.helper = AEHostToolsHelper()
-        return cls.helper
-
-    @classmethod
-    def _get_helper(cls) -> AEHostToolsHelper:
-        return cls._create_helper()
-
-    @classmethod
-    def show_tool_by_name(cls, tool_name, parent=None, *args, **kwargs):
-        helper = cls._get_helper()
-        helper.show_tool_by_name(tool_name, parent, *args, **kwargs)
-
-    @classmethod
-    def get_tool_by_name(cls, tool_name, parent=None, *args, **kwargs):
-        helper = cls._get_helper()
-        return helper.get_tool_by_name(tool_name, parent, *args, **kwargs)
+def _get_helper():
+    global _helper
+    if _helper is None:
+        _helper = AEHostToolsHelper()
+    return _helper
 
 
 def get_tool_by_name(tool_name, parent=None, *args, **kwargs):
     """Return an After Effects host tool by name."""
-    return _SingletonPoint.get_tool_by_name(
-        tool_name,
-        parent,
-        *args,
-        **kwargs,
-    )
+    return _get_helper().get_tool_by_name(tool_name, parent, *args, **kwargs)
 
 
 def show_tool_by_name(tool_name, parent=None, *args, **kwargs):
     """Show an After Effects host tool by name."""
-    _SingletonPoint.show_tool_by_name(tool_name, parent, *args, **kwargs)
+    _get_helper().show_tool_by_name(tool_name, parent, *args, **kwargs)
 
 
 def show_run_scripts_tool(parent=None):
     """Show the manual run scripts tool."""
-    _SingletonPoint.show_tool_by_name("run_scripts", parent)
+    _get_helper().show_tool_by_name("run_scripts", parent)

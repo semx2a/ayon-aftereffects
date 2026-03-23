@@ -1,32 +1,31 @@
-import os
-import sys
-import subprocess
-import collections
-import logging
 import asyncio
+import collections
 import functools
+import os
+import subprocess
+import sys
 import traceback
 
-from wsrpc_aiohttp import (
-    WebSocketRoute,
-    WebSocketAsync
-)
-
-from qtpy import QtCore
-
-from ayon_core.lib import Logger, is_in_tests, env_value_to_bool
-from ayon_core.pipeline import install_host
 from ayon_core.addon import AddonsManager
+from ayon_core.lib import (
+    Logger,
+    env_value_to_bool,
+    is_in_tests,
+    register_event_callback,
+)
+from ayon_core.lib.events import emit_event
+from ayon_core.pipeline import install_host
 from ayon_core.tools.utils import get_ayon_qt_app
+from qtpy import QtCore
+from wsrpc_aiohttp import WebSocketAsync, WebSocketRoute
 
+from ayon_aftereffects.api import ae_host_tools
+
+from .lib import set_settings
 from .webserver import WebServerTool
 from .ws_stub import get_stub
-from .lib import set_settings
-from ayon_aftereffects.api import ae_host_tools
-from .scripts import run_scripts
 
-log = logging.getLogger(__name__)
-log.setLevel(logging.DEBUG)
+log = Logger.get_logger(__name__)
 
 
 console_window = None
@@ -51,7 +50,6 @@ def main(*subprocess_args):
 
     launcher = ProcessLauncher(subprocess_args)
     launcher.start()
-    launcher.execute_in_main_thread(run_scripts)
 
     env_workfiles_on_launch = os.getenv(
         "AYON_AFTEREFFECTS_WORKFILES_ON_LAUNCH",
@@ -134,6 +132,7 @@ class ProcessLauncher(QtCore.QObject):
 
         self._process = None
         self._websocket_server = None
+        self._auto_scripts_pending = False
 
         start_process_timer = QtCore.QTimer()
         start_process_timer.setInterval(100)
@@ -146,6 +145,11 @@ class ProcessLauncher(QtCore.QObject):
 
         self._start_process_timer = start_process_timer
         self._loop_timer = loop_timer
+
+        register_event_callback(
+            "application.close",
+            lambda: ProcessLauncher.execute_in_main_thread(self.exit),
+        )
 
     @property
     def log(self):
@@ -218,6 +222,15 @@ class ProcessLauncher(QtCore.QObject):
                 callback = cls._main_thread_callbacks.popleft()
                 callback()
 
+        if self._auto_scripts_pending:
+            try:
+                result = get_stub().get_active_document_full_name()
+                if result and result not in ["null", ""]:
+                    self._auto_scripts_pending = False
+                    emit_event("workfile.opened")
+            except Exception:
+                pass  # not connected yet, retry next tick
+
         if not self.is_process_running:
             self.log.info("Host process is not running. Closing")
             self.exit()
@@ -248,6 +261,12 @@ class ProcessLauncher(QtCore.QObject):
         # Wait until host is connected
         if self.is_host_connected:
             self._start_process_timer.stop()
+            emit_event("application.launched")
+            if any(
+                str(arg).endswith(".aep")
+                for arg in self._subprocess_args
+            ):
+                self._auto_scripts_pending = True
             self._loop_timer.start()
         elif (
             not self.is_process_running
@@ -277,10 +296,8 @@ class ProcessLauncher(QtCore.QObject):
         websocket_server.add_route("*", "/ws/", WebSocketAsync)
         # Add after effects route to websocket handler
 
-        print("Adding {} route".format(self.route_name))
-        WebSocketAsync.add_route(
-            self.route_name, AfterEffectsRoute
-        )
+        self.log.info("Adding {} route".format(self.route_name))
+        WebSocketAsync.add_route(self.route_name, AfterEffectsRoute)
 
         self.log.info(
             "Starting websocket server for host communication at "
@@ -345,7 +362,6 @@ class AfterEffectsRoute(WebSocketRoute):
         'do_notify' function calls function on the client - mimicking
             notification after long running job on the server or similar
     """
-    instance = None
 
     def init(self, **kwargs):
         # Python __init__ must be return "self".

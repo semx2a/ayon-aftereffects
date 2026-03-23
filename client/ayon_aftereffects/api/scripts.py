@@ -82,24 +82,26 @@ class ScriptService:
 
             raw_path: str = config["path"]
             name: str = config["name"]
-            resolved_path = self.resolve_path(raw_path)
 
             error: str | None = None
             exists = False
             if not raw_path:
+                resolved_path = raw_path
                 error = "Script path is empty."
-            elif not self._has_supported_extension(resolved_path):
-                error = "Only .js and .jsx files are supported."
-            elif not os.path.isfile(resolved_path):
-                error = "Script file does not exist."
             else:
-                exists = True
+                resolved_path = self.resolve_path(raw_path)
+                if not self._has_supported_extension(resolved_path):
+                    error = "Only .js and .jsx files are supported."
+                elif not os.path.isfile(resolved_path):
+                    error = "Script file does not exist."
+                else:
+                    exists = True
 
             output.append(
                 ScriptItem(
                     script_id=f"script_{index}",
                     name=name,
-                    path=resolved_path or raw_path,
+                    path=resolved_path,
                     auto=item_auto,
                     exists=exists,
                     error=error,
@@ -161,6 +163,8 @@ class ScriptService:
             result = self._run_item(item)
             if not result.success:
                 log.warning(result.message)
+            else:
+                log.info(f"Script {item.name} ran successfully.")
 
     def run_manual_script(self, script_id: str) -> ScriptRunResult:
         """Run a single manually configured script.

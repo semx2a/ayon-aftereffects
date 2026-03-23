@@ -7,9 +7,9 @@ from pydantic import validator
 
 
 class ScriptConfigModel(BaseSettingsModel):
-    """Provide list of scripts to run at workfile_opened."""
+    """Configuration for a single After Effects script."""
 
-    name: str = SettingsField(default_factory=str, title="Script name.")
+    name: str = SettingsField(default="", title="Script name.")
     auto: bool = SettingsField(
         True,
         description="Auto/Manual toggle.",
@@ -22,7 +22,7 @@ class ScriptConfigModel(BaseSettingsModel):
 
 
 class Scripts(BaseSettingsModel):
-    """Workfile template builder with dynamic items via Placeholders"""
+    """Scripts to run at workfile open."""
 
     configs: list[ScriptConfigModel] = SettingsField(
         default_factory=list, title="Script config"

@@ -7,12 +7,18 @@
 <link  id="hostStyle" rel="stylesheet" href="css/styles.css"/>
 
 <style type="text/css">
-  html, body, iframe {
+  html, iframe {
     width: 100%;
     height: 100%;
     border: 0px;
     margin: 0px;
     overflow: hidden;
+  }
+  body {
+    width: 100%;
+    border: 0px;
+    margin: 0px;
+    overflow-y: auto;
   }
   button {width: 100%;}
 </style>
@@ -177,8 +183,7 @@
 
     <div id="content">
 
-        <div>
-            <div></div><a href=# id=workfiles-button><button class="hostFontSize">Workfiles...</button></a></div>
+            <div><a href=# id=workfiles-button><button class="hostFontSize">Workfiles...</button></a></div>
             <div><a href=# id=loader-button><button class="hostFontSize">Load...</button></a></div>
             <div><a href=# id=publish-button><button class="hostFontSize">Publish...</button></a></div>
             <div><a href=# id=sceneinventory-button><button class="hostFontSize">Manage...</button></a></div>
