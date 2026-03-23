@@ -17,7 +17,7 @@ class AfterEffectsSettings(BaseSettingsModel):
     auto_install_extension: bool = SettingsField(
         False,
         title="Install AYON Extension",
-        description="Triggers pre-launch hook which installs extension.",
+        description="Triggers pre-launch hook which installs extension."
     )
 
     imageio: AfterEffectsImageIOModel = SettingsField(

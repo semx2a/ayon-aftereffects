@@ -163,5 +163,3 @@ Temporary Items
 
 # ignore mkdocs build
 site/
-ZXPSignCmd
-extension.p12

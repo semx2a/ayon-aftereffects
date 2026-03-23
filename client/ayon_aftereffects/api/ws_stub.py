@@ -6,6 +6,7 @@ import json
 import logging
 
 import attr
+
 from wsrpc_aiohttp import WebSocketAsync
 
 from .webserver import WebServerTool
@@ -24,7 +25,7 @@ class AEItem(object):
     # metadata
     id = attr.ib()  # id created by AE, could be used for querying
     name = attr.ib()  # name of item
-    item_type = attr.ib(default=None)  # footage, folder, comp
+    item_type = attr.ib(default=None)  # item type (footage, folder, comp)
     # all imported elements, single for
     # regular image, array for Backgrounds
     members = attr.ib(factory=list)
@@ -42,7 +43,7 @@ class AEItem(object):
     containing_comps = attr.ib(factory=list)
 
 
-class AfterEffectsServerStub:
+class AfterEffectsServerStub():
     """Stub for calling function on client (After Effects js) side.
 
     Expects that client is already connected (started when AYON menu is opened)
@@ -127,9 +128,8 @@ class AfterEffectsServerStub:
         if layers_meta is None:
             layers_meta = self.get_metadata()
         for item_meta in layers_meta:
-            if "container" in item_meta.get("id") and str(item.id) == str(
-                item_meta.get("members")[0]
-            ):
+            if "container" in item_meta.get("id") and \
+                    str(item.id) == str(item_meta.get("members")[0]):
                 return item_meta
 
         self.log.debug(f"Couldn't find layer metadata for item: {item}")
@@ -170,10 +170,9 @@ class AfterEffectsServerStub:
         is_new = True
 
         for item_meta in items_meta:
-            if (
-                item_meta.get("members")
-                and str(item_id) == str(item_meta.get("members")[0])
-            ) or item_meta.get("instance_id") == item_id:
+            if ((item_meta.get("members") and
+                    str(item_id) == str(item_meta.get("members")[0])) or
+                    item_meta.get("instance_id") == item_id):
                 is_new = False
                 if data:
                     item_meta.update(data)
@@ -187,7 +186,9 @@ class AfterEffectsServerStub:
         # Ensure only valid ids are stored.
         if not all_items:
             # loaders create FootageItem now
-            all_items = self.get_items(comps=True, folders=True, footages=True)
+            all_items = self.get_items(comps=True,
+                                                folders=True,
+                                                footages=True)
         item_ids = [int(item.id) for item in all_items]
         cleaned_data = []
         for meta in result_meta:
@@ -548,8 +549,8 @@ class AfterEffectsServerStub:
                 files (list): list of absolute paths to import and
                 add as layers
 
-        Returns:
-            (AEItem): object with id of created folder, all imported images
+            Returns:
+                (AEItem): object with id of created folder, all imported images
         """
         res = self.websocketserver.call_on_client(
             self,
@@ -570,14 +571,14 @@ class AfterEffectsServerStub:
             It actually deletes complete folder with imported images and
             created composition for safety.
 
-        Args:
-            comp_id (int): id of existing composition to be overwritten
-            comp_name (str): new name of composition (could be same as old
-                if version up only)
-            files (list): list of absolute paths to import and
-                add as layers
-        Returns:
-            (AEItem): object with id of created folder, all imported images
+            Args:
+                comp_id (int): id of existing composition to be overwritten
+                comp_name (str): new name of composition (could be same as old
+                    if version up only)
+                files (list): list of absolute paths to import and
+                    add as layers
+            Returns:
+                (AEItem): object with id of created folder, all imported images
         """
         res = self.websocketserver.call_on_client(
             self,
@@ -596,10 +597,10 @@ class AfterEffectsServerStub:
             Adds already imported FootageItem ('item_id') as a new
             layer to composition ('comp_id').
 
-        Args:
-            comp_id (int): id of target composition
-            item_id (int): FootageItem.id
-            comp already found previously
+            Args:
+                comp_id (int): id of target composition
+                item_id (int): FootageItem.id
+                comp already found previously
         """
         res = self.websocketserver.call_on_client(
             self,
@@ -618,9 +619,9 @@ class AfterEffectsServerStub:
 
             1 placeholder could result in multiple loaded containers (eg items)
 
-        Args:
-            placeholder_item_id (int): id of placeholder item
-            item_id (int): loaded FootageItem id
+            Args:
+                placeholder_item_id (int): id of placeholder item
+                item_id (int): loaded FootageItem id
         """
         res = self.websocketserver.call_on_client(
             self,
@@ -638,12 +639,12 @@ class AfterEffectsServerStub:
             Placeholder requires width etc, currently probably only hardcoded
             values.
 
-        Args:
-            name (str)
-            width (int)
-            height (int)
-            fps (float)
-            duration (int)
+            Args:
+                name (str)
+                width (int)
+                height (int)
+                fps (float)
+                duration (int)
         """
         res = self.websocketserver.call_on_client(
             self,

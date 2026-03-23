@@ -1,29 +1,34 @@
-import asyncio
-import collections
-import functools
 import os
-import subprocess
 import sys
+import subprocess
+import collections
+import asyncio
+import functools
 import traceback
 
-from ayon_core.addon import AddonsManager
+from wsrpc_aiohttp import (
+    WebSocketRoute,
+    WebSocketAsync
+)
+
+from qtpy import QtCore
+
 from ayon_core.lib import (
     Logger,
-    env_value_to_bool,
     is_in_tests,
+    env_value_to_bool,
     register_event_callback,
 )
-from ayon_core.lib.events import emit_event
 from ayon_core.pipeline import install_host
+from ayon_core.addon import AddonsManager
 from ayon_core.tools.utils import get_ayon_qt_app
-from qtpy import QtCore
-from wsrpc_aiohttp import WebSocketAsync, WebSocketRoute
+from ayon_core.lib.events import emit_event
 
 from ayon_aftereffects.api import ae_host_tools
 
-from .lib import set_settings
 from .webserver import WebServerTool
 from .ws_stub import get_stub
+from .lib import set_settings
 
 log = Logger.get_logger(__name__)
 
@@ -297,7 +302,9 @@ class ProcessLauncher(QtCore.QObject):
         # Add after effects route to websocket handler
 
         self.log.info("Adding {} route".format(self.route_name))
-        WebSocketAsync.add_route(self.route_name, AfterEffectsRoute)
+        WebSocketAsync.add_route(
+            self.route_name, AfterEffectsRoute
+        )
 
         self.log.info(
             "Starting websocket server for host communication at "
@@ -362,6 +369,7 @@ class AfterEffectsRoute(WebSocketRoute):
         'do_notify' function calls function on the client - mimicking
             notification after long running job on the server or similar
     """
+    instance = None
 
     def init(self, **kwargs):
         # Python __init__ must be return "self".
