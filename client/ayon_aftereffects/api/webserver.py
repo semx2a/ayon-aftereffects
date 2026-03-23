@@ -114,11 +114,11 @@ class WebServerTool:
         return result
 
     def call_on_client(self, stub, method_name, **kwargs):
-        """Run a single RPC on the current WebSocket client, with retry on connection errors.
+        """Run a single RPC on the current WebSocket client, with retry.
 
-        When the CEP extension is blocked by a long JSX operation (e.g. get_layers
-        on a large PSD or save()), the WebSocket transport can close. This method
-        retries after a delay so the extension can reconnect.
+        When the CEP extension is blocked by a long JSX operation the
+        WebSocket transport can close. This method retries after a delay
+        so the extension can reconnect.
 
         Args:
             stub: Object with a .client property.
@@ -129,7 +129,8 @@ class WebServerTool:
             Result of the RPC.
 
         Raises:
-            ConnectionResetError, ConnectionError, OSError: After all retries failed.
+            ConnectionResetError, ConnectionError, OSError: After all
+                retries failed.
         """
         last_exception = None
         for attempt in range(self._CALL_MAX_RETRIES):
@@ -138,7 +139,8 @@ class WebServerTool:
                 if client is None:
                     raise ConnectionError("No WebSocket client connected")
                 log.debug(
-                    f"websocket.call_on_client attempt {attempt + 1}/{self._CALL_MAX_RETRIES}",
+                    "websocket.call_on_client attempt"
+                    f" {attempt + 1}/{self._CALL_MAX_RETRIES}",
                 )
 
                 if self.webserver_thread.loop:
@@ -151,13 +153,16 @@ class WebServerTool:
                 last_exception = e
                 if attempt >= self._CALL_MAX_RETRIES - 1:
                     log.warning(
-                        f"WebSocket call failed after {attempt + 1} attempt(s): {e}",
+                        f"WebSocket call failed after"
+                        f" {attempt + 1} attempt(s): {e}",
                         exc_info=True,
                     )
                     raise e
                 log.warning(
-                    f"WebSocket connection error (attempt {attempt + 1}/{self._CALL_MAX_RETRIES}), waiting for "
-                    f"healthy client (up to {self._CALL_RETRY_DELAY}s): {e}",
+                    f"WebSocket connection error"
+                    f" (attempt {attempt + 1}/"
+                    f"{self._CALL_MAX_RETRIES}),"
+                    f" waiting up to {self._CALL_RETRY_DELAY}s: {e}",
                 )
                 self._wait_for_healthy_client(self._CALL_RETRY_DELAY)
 

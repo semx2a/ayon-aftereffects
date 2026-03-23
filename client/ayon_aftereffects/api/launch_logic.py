@@ -132,7 +132,7 @@ class ProcessLauncher(QtCore.QObject):
 
         super(ProcessLauncher, self).__init__()
 
-        # Keep track if launcher was alreadu started
+        # Keep track if launcher was already started
         self._started = False
 
         self._process = None

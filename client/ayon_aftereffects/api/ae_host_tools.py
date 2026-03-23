@@ -4,6 +4,8 @@ from ayon_core.tools.utils.lib import qt_app_context
 from .run_scripts_window import RunScriptsWindow
 from .scripts import get_script_service
 
+_TOOL_RUN_SCRIPTS = "run_scripts"
+
 
 class AEHostToolsHelper(HostToolsHelper):
     """After Effects host tools wrapper with addon-local tools."""
@@ -54,7 +56,7 @@ class AEHostToolsHelper(HostToolsHelper):
         Returns:
             Cached tool instance.
         """
-        if tool_name == "run_scripts":
+        if tool_name == _TOOL_RUN_SCRIPTS:
             return self.get_run_scripts_tool(parent)
         return super().get_tool_by_name(tool_name, parent, *args, **kwargs)
 
@@ -67,7 +69,7 @@ class AEHostToolsHelper(HostToolsHelper):
             *args: Positional arguments passed through.
             **kwargs: Keyword arguments passed through.
         """
-        if tool_name == "run_scripts":
+        if tool_name == _TOOL_RUN_SCRIPTS:
             self.show_run_scripts_tool(parent)
             return
         super().show_tool_by_name(tool_name, parent, *args, **kwargs)
@@ -95,4 +97,4 @@ def show_tool_by_name(tool_name, parent=None, *args, **kwargs):
 
 def show_run_scripts_tool(parent=None):
     """Show the manual run scripts tool."""
-    _get_helper().show_tool_by_name("run_scripts", parent)
+    _get_helper().show_tool_by_name(_TOOL_RUN_SCRIPTS, parent)

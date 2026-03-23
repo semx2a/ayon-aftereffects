@@ -120,7 +120,7 @@ class RunScriptsWindow(QtWidgets.QDialog):
         if item is None:
             return
 
-        result = self._service.run_manual_script(item.script_id)
+        result = self._service.run_item(item)
         self._status_label.setText(result.message)
 
     def _get_selected_item(self) -> ScriptItem | None:
