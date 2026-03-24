@@ -20,8 +20,9 @@ def raise_window_to_front(window):
 
     On Windows, activateWindow() is silently ignored when the calling
     process does not own the foreground (e.g. when triggered via the
-    CEP panel). AllowSetForegroundWindow unlocks the restriction so that
-    the subsequent SetForegroundWindow call succeeds.
+    CEP panel). AttachThreadInput temporarily borrows the foreground
+    thread's input state so SetForegroundWindow succeeds even on the
+    first call, before Python has ever received focus.
 
     Args:
         window (QtWidgets.QWidget): Window to bring to the front.
@@ -31,8 +32,19 @@ def raise_window_to_front(window):
     window.activateWindow()
     if sys.platform == "win32":
         import ctypes
-        ctypes.windll.user32.AllowSetForegroundWindow(-1)
-        ctypes.windll.user32.SetForegroundWindow(int(window.winId()))
+        user32 = ctypes.windll.user32
+        hwnd = int(window.winId())
+        foreground_hwnd = user32.GetForegroundWindow()
+        foreground_tid = user32.GetWindowThreadProcessId(
+            foreground_hwnd, None
+        )
+        current_tid = ctypes.windll.kernel32.GetCurrentThreadId()
+        if foreground_tid and foreground_tid != current_tid:
+            user32.AttachThreadInput(current_tid, foreground_tid, True)
+            user32.SetForegroundWindow(hwnd)
+            user32.AttachThreadInput(current_tid, foreground_tid, False)
+        else:
+            user32.SetForegroundWindow(hwnd)
 
 
 @contextlib.contextmanager
