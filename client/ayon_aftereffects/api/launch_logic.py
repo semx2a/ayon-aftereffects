@@ -28,7 +28,7 @@ from ayon_aftereffects.api import ae_host_tools
 
 from .webserver import WebServerTool
 from .ws_stub import get_stub
-from .lib import set_settings
+from .lib import raise_window_to_front, set_settings
 
 log = Logger.get_logger(__name__)
 
@@ -116,9 +116,7 @@ def show_script_editor():
             console_window.windowFlags() |
             QtCore.Qt.Dialog |
             QtCore.Qt.WindowMinimizeButtonHint)
-    console_window.show()
-    console_window.raise_()
-    console_window.activateWindow()
+    raise_window_to_front(console_window)
 
 
 class ProcessLauncher(QtCore.QObject):

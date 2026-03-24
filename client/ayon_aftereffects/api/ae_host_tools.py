@@ -1,6 +1,7 @@
 from ayon_core.tools.utils.host_tools import HostToolsHelper
 from ayon_core.tools.utils.lib import qt_app_context
 
+from .lib import raise_window_to_front
 from .run_scripts_window import RunScriptsWindow
 from .scripts import get_script_service
 
@@ -39,10 +40,7 @@ class AEHostToolsHelper(HostToolsHelper):
         with qt_app_context():
             window = self.get_run_scripts_tool(parent)
             window.refresh()
-            window.show()
-            window.raise_()
-            window.activateWindow()
-            window.showNormal()
+            raise_window_to_front(window)
 
     def get_tool_by_name(self, tool_name, parent=None, *args, **kwargs):
         """Return a cached tool window by name.

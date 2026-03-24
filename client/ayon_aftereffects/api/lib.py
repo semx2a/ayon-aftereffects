@@ -1,6 +1,7 @@
 from __future__ import annotations
 import os
 import re
+import sys
 import json
 import contextlib
 import pyblish
@@ -12,6 +13,26 @@ from ayon_core.lib import Logger
 from .ws_stub import get_stub
 
 log = Logger.get_logger(__name__)
+
+
+def raise_window_to_front(window):
+    """Raise a Qt window to the foreground.
+
+    On Windows, activateWindow() is silently ignored when the calling
+    process does not own the foreground (e.g. when triggered via the
+    CEP panel). AllowSetForegroundWindow unlocks the restriction so that
+    the subsequent SetForegroundWindow call succeeds.
+
+    Args:
+        window (QtWidgets.QWidget): Window to bring to the front.
+    """
+    window.show()
+    window.raise_()
+    window.activateWindow()
+    if sys.platform == "win32":
+        import ctypes
+        ctypes.windll.user32.AllowSetForegroundWindow(-1)
+        ctypes.windll.user32.SetForegroundWindow(int(window.winId()))
 
 
 @contextlib.contextmanager
