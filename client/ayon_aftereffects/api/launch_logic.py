@@ -291,10 +291,10 @@ class ProcessLauncher(QtCore.QObject):
     def _release_workfile_lock(self):
         """Release the workfile lock held by this session.
 
-        Core has no host teardown hook, so this is the one host specific
+        Core has no host teardown hook, so this is the one host-specific
         piece the locking mixin needs. 'exit()' also runs when After
-        Effects died on its own, which is what keeps a crash from leaving
-        a lock behind.
+        Effects has died on its own, which is what keeps a crash from
+        leaving a lock behind.
 
         Deliberately never talks to the extension, because After Effects
         may be gone already and stub calls block without a timeout.
