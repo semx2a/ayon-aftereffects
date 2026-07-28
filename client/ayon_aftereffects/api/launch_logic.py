@@ -86,10 +86,9 @@ def _emit_workfile_open_for_launch(host):
     )
     # Set AYON_WORKDIR to match the behaviour of open_workfile_with_context
     os.environ["AYON_WORKDIR"] = event_data["workdir_path"]
-    # After Effects opened this natively from the launch argument, so
-    #   'open_workfile_with_context' - and the locking the mixin does there
-    #   - was bypassed. Before the event, so the lock is held by the time
-    #   the auto scripts bound to 'workfile.opened' run.
+    # AE opened this from the launch argument, so the mixin never saw it.
+    #   Called before the event, so the lock is held by the time the auto
+    #   scripts bound to 'workfile.opened' run.
     host.handle_external_workfile_open(
         filepath, project_name=project_name
     )
@@ -297,8 +296,8 @@ class ProcessLauncher(QtCore.QObject):
         Effects died on its own, which is what keeps a crash from leaving
         a lock behind.
 
-        Deliberately never talks to the extension - After Effects may be
-        gone already and stub calls block without a timeout.
+        Deliberately never talks to the extension, because After Effects
+        may be gone already and stub calls block without a timeout.
         """
         host = self._host
         if host is None:
