@@ -9,11 +9,13 @@ from ayon_core.pipeline import (
     register_loader_plugin_path,
     register_creator_plugin_path,
     register_workfile_build_plugin_path,
+    registered_host,
     AYON_CONTAINER_ID,
     AVALON_INSTANCE_ID,
     AYON_INSTANCE_ID,
 )
 from ayon_core.pipeline.load import any_outdated_containers
+from ayon_core.pipeline.workfile import WorkfileLockMixin
 from ayon_core.host import (
     HostBase,
     IWorkfileHost,
@@ -22,6 +24,7 @@ from ayon_core.host import (
 )
 from ayon_core.tools.utils import get_ayon_qt_app
 from ayon_aftereffects import AFTEREFFECTS_ADDON_ROOT
+from ayon_aftereffects.launch_utils import WORKFILE_LOCK_OVERRIDE_ENV
 
 from .launch_logic import get_stub
 from .scripts import run_scripts
@@ -37,7 +40,12 @@ CREATE_PATH = os.path.join(PLUGINS_DIR, "create")
 WORKFILE_BUILD_PATH = os.path.join(PLUGINS_DIR, "workfile_build")
 
 
-class AfterEffectsHost(HostBase, IWorkfileHost, ILoadHost, IPublishHost):
+class AfterEffectsHost(
+    HostBase, WorkfileLockMixin, IWorkfileHost, ILoadHost, IPublishHost
+):
+    # 'WorkfileLockMixin' has to come before 'IWorkfileHost' so that the
+    #   locking hooks win the method resolution order over the interface
+    #   defaults. Releasing the lock is wired in 'ProcessLauncher.exit'.
     name = "aftereffects"
 
     def __init__(self):
@@ -171,12 +179,71 @@ class AfterEffectsHost(HostBase, IWorkfileHost, ILoadHost, IPublishHost):
                                  item.name.replace(stub.PUBLISH_ICON, ''))
 
 
-def on_workfile_opened():
-    """Run automatic scripts after a workfile was opened."""
+def on_workfile_opened(event=None):
+    """Handle a workfile that was just opened.
+
+    Args:
+        event (Optional[Event]): Event carrying the workfile data. Not
+            passed by callers that emit the event without it.
+    """
+    acquire_workfile_lock(event)
+
     try:
         run_scripts(auto=True)
     except Exception:
         log.exception("Automatic script execution failed.")
+
+
+def acquire_workfile_lock(event=None):
+    """Lock the opened workfile for this session.
+
+    A workfile opened through the Workfiles tool is already locked by
+    'WorkfileLockMixin._after_workfile_open'. This covers the launcher
+    path, where After Effects opens the '.aep' natively from a launch
+    argument and 'open_workfile_with_context' never runs.
+
+    Args:
+        event (Optional[Event]): Event carrying the workfile data.
+    """
+    try:
+        host = registered_host()
+        if not isinstance(host, WorkfileLockMixin):
+            return
+
+        event_data = getattr(event, "data", None) or {}
+        filepath = event_data.get("filepath") or host.get_current_workfile()
+        if not filepath:
+            return
+
+        project_name = event_data.get("project_name")
+
+        # Popped unconditionally so it is honoured exactly once, for the
+        #   workfile the launch started with.
+        override_path = os.environ.pop(WORKFILE_LOCK_OVERRIDE_ENV, "")
+        lock_ignored = bool(override_path) and (
+            os.path.normpath(override_path) == os.path.normpath(filepath)
+        )
+
+        lock_data = host.get_workfile_lock_holder(
+            filepath, project_name=project_name
+        )
+        if lock_data is not None and not lock_ignored:
+            # After Effects already has the workfile open at this point,
+            #   so refusing is not on the table anymore. All we can do is
+            #   ask, and leave the lock with its owner when the artist
+            #   decides against taking the workfile over.
+            if not host.confirm_locked_workfile(filepath):
+                log.warning(
+                    "Workfile '%s' stays locked by %s on %s.",
+                    filepath,
+                    lock_data.get("username"),
+                    lock_data.get("hostname"),
+                )
+                return
+
+        host.acquire_workfile_lock(filepath, project_name=project_name)
+    except Exception:
+        log.warning("Failed to lock the opened workfile.", exc_info=True)
 
 
 def on_application_launch():

@@ -105,7 +105,7 @@ def main(*subprocess_args):
     app = get_ayon_qt_app()
     app.setQuitOnLastWindowClosed(False)
 
-    launcher = ProcessLauncher(subprocess_args)
+    launcher = ProcessLauncher(subprocess_args, host)
     launcher.start()
 
     # If a workfile path was passed as a launch argument, AE opens
@@ -186,8 +186,10 @@ class ProcessLauncher(QtCore.QObject):
     route_name = "AfterEffects"
     _main_thread_callbacks = collections.deque()
 
-    def __init__(self, subprocess_args):
+    def __init__(self, subprocess_args, host=None):
         self._subprocess_args = subprocess_args
+        # Kept only to release the workfile lock on exit.
+        self._host = host
         self._log = None
 
         super(ProcessLauncher, self).__init__()
@@ -267,6 +269,8 @@ class ProcessLauncher(QtCore.QObject):
         if self._loop_timer.isActive():
             self._loop_timer.stop()
 
+        self._release_workfile_lock()
+
         if self._websocket_server is not None:
             self._websocket_server.stop()
 
@@ -275,6 +279,27 @@ class ProcessLauncher(QtCore.QObject):
             self._process.wait()
 
         QtCore.QCoreApplication.exit()
+
+    def _release_workfile_lock(self):
+        """Release the workfile lock held by this session.
+
+        Core has no host teardown hook, so this is the one host specific
+        piece the locking mixin needs. 'exit()' also runs when After
+        Effects died on its own, which is what keeps a crash from leaving
+        a lock behind.
+
+        Deliberately never talks to the extension - After Effects may be
+        gone already and stub calls block without a timeout.
+        """
+        if self._host is None:
+            return
+
+        try:
+            self._host.release_workfile_lock()
+        except Exception:
+            self.log.warning(
+                "Failed to release the workfile lock.", exc_info=True
+            )
 
     def _on_loop_timer(self):
         # TODO find better way and catch errors
