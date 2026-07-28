@@ -21,13 +21,15 @@ from ayon_core.lib import (
     emit_event,
 )
 import ayon_api
-from ayon_core.pipeline import install_host
+from ayon_core.pipeline import install_host, registered_host
 from ayon_core.addon import AddonsManager
+from ayon_core.settings import get_project_settings
 from ayon_core.tools.utils import get_ayon_qt_app
 from ayon_core.pipeline.context_tools import get_current_context
 from ayon_core.pipeline.workfile import save_next_version
 
 from ayon_aftereffects.api import ae_host_tools
+from ayon_aftereffects.launch_utils import WORKFILE_LOCK_OVERRIDE_ENV
 
 from .webserver import WebServerTool
 from .ws_stub import get_stub
@@ -86,10 +88,67 @@ def _emit_workfile_open_for_launch(host):
     )
     # Set AYON_WORKDIR to match the behaviour of open_workfile_with_context
     os.environ["AYON_WORKDIR"] = event_data["workdir_path"]
+    # Before the event, so the lock is held by the time the auto scripts
+    #   bound to 'workfile.opened' run.
+    _acquire_workfile_lock(host, filepath, project_name)
     host._emit_workfile_open_event(event_data, after_open=True)
     log.info(
         "Emitted workfile.opened for launcher-opened file: %s", filepath
     )
+
+
+def _acquire_workfile_lock(host, filepath, project_name):
+    """Lock a workfile that After Effects opened from a launch argument.
+
+    Only the launcher path needs this. A workfile opened through the
+    Workfiles tool goes through 'open_workfile_with_context', where
+    'WorkfileLockMixin._after_workfile_open' already locks it.
+
+    Args:
+        host (AfterEffectsHost): The registered host instance.
+        filepath (str): Path to the opened workfile.
+        project_name (str): Name of the current project.
+    """
+    try:
+        # Popped whether or not it is used, so it can never leak into a
+        #   later workfile in the same session.
+        override_path = os.environ.pop(WORKFILE_LOCK_OVERRIDE_ENV, "")
+        lock_ignored = bool(override_path) and (
+            os.path.normpath(override_path) == os.path.normpath(filepath)
+        )
+
+        # Resolved once and handed to both calls below, which would each
+        #   query the server otherwise.
+        project_settings = get_project_settings(project_name)
+
+        if not lock_ignored:
+            lock_data = host.get_workfile_lock_holder(
+                filepath,
+                project_name=project_name,
+                project_settings=project_settings,
+            )
+            # A lock taken between the prelaunch check and now. After
+            #   Effects already has the workfile open, so refusing is not
+            #   on the table anymore - ask, and leave the lock with its
+            #   owner if the artist decides against taking it over.
+            if lock_data is not None and not host.confirm_locked_workfile(
+                filepath
+            ):
+                log.warning(
+                    "Workfile '%s' stays locked by %s on %s.",
+                    filepath,
+                    lock_data.get("username"),
+                    lock_data.get("hostname"),
+                )
+                return
+
+        host.acquire_workfile_lock(
+            filepath,
+            project_name=project_name,
+            project_settings=project_settings,
+        )
+    except Exception:
+        log.warning("Failed to lock the opened workfile.", exc_info=True)
 
 
 def main(*subprocess_args):
@@ -105,7 +164,7 @@ def main(*subprocess_args):
     app = get_ayon_qt_app()
     app.setQuitOnLastWindowClosed(False)
 
-    launcher = ProcessLauncher(subprocess_args, host)
+    launcher = ProcessLauncher(subprocess_args)
     launcher.start()
 
     # If a workfile path was passed as a launch argument, AE opens
@@ -186,10 +245,8 @@ class ProcessLauncher(QtCore.QObject):
     route_name = "AfterEffects"
     _main_thread_callbacks = collections.deque()
 
-    def __init__(self, subprocess_args, host=None):
+    def __init__(self, subprocess_args):
         self._subprocess_args = subprocess_args
-        # Kept only to release the workfile lock on exit.
-        self._host = host
         self._log = None
 
         super(ProcessLauncher, self).__init__()
@@ -291,11 +348,8 @@ class ProcessLauncher(QtCore.QObject):
         Deliberately never talks to the extension - After Effects may be
         gone already and stub calls block without a timeout.
         """
-        if self._host is None:
-            return
-
         try:
-            self._host.release_workfile_lock()
+            registered_host().release_workfile_lock()
         except Exception:
             self.log.warning(
                 "Failed to release the workfile lock.", exc_info=True

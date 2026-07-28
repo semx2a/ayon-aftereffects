@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import os
-
 from ayon_applications import PreLaunchHook, LaunchTypes
 from ayon_core.pipeline.workfile import (
     get_workfile_lock_data,
@@ -26,13 +24,22 @@ class CheckWorkfileLock(PreLaunchHook):
     aborting the launch, so After Effects still starts, just without a
     workfile. The artist can then pick a different one in the Workfiles
     tool.
+
+    Nothing here is specific to After Effects - every host that opens its
+    workfile from a launch argument has the same gap. Worth moving to
+    ayon-core next to the mixin.
     """
 
     app_groups = {"aftereffects"}
 
-    # Before 'AEPrelaunchHook' (order 20), which is what turns the
-    #   workfile path into a launch argument.
-    order = 19
+    # Before every hook that turns the workfile into a launch argument:
+    #   'AddLastWorkfileToLaunchArgs' (ayon-core, order 10) and
+    #   'AEPrelaunchHook' (order 20). Both decide from 'workfile_path' and
+    #   'start_last_workfile', so clearing those is enough to keep the
+    #   workfile out of the launch - as long as this runs first. The data
+    #   it reads is ready well before: 'GlobalHostDataHook' is order -100
+    #   and 'CopyTemplateWorkfile' order 0.
+    order = 9
     launch_types = {LaunchTypes.local}
 
     def execute(self):
@@ -98,36 +105,15 @@ class CheckWorkfileLock(PreLaunchHook):
         )
         self.data["workfile_path"] = None
         self.data["start_last_workfile"] = False
-        self._drop_from_launch_args(workfile_path)
-
-    def _drop_from_launch_args(self, workfile_path: str) -> None:
-        """Remove the workfile from the launch arguments.
-
-        Clearing the launch context data is not enough on its own.
-        'AddLastWorkfileToLaunchArgs' (ayon-core, order 10) has already
-        appended the workfile to the launch arguments by the time this
-        hook runs, and 'AEPrelaunchHook' (order 20) pops everything it
-        finds there into 'remainders' and appends it back after the
-        rewritten arguments. The workfile would reach After Effects
-        anyway.
-
-        Args:
-            workfile_path (str): Path to the workfile to remove.
-
-        """
-        target = os.path.normpath(workfile_path)
-        launch_args = self.launch_context.launch_args
-        # Sliced in place - the list object is handed around.
-        launch_args[:] = [
-            arg
-            for arg in launch_args
-            if not (
-                isinstance(arg, str) and os.path.normpath(arg) == target
-            )
-        ]
 
     def _confirm_locked_workfile(self, workfile_path: str) -> bool:
         """Ask the artist whether to open the locked workfile.
+
+        Deliberately not routed through
+        'WorkfileLockMixin.confirm_locked_workfile': there is no host
+        instance in the launcher process, and building one would pull the
+        whole websocket stack into a launch hook. A host that overrides
+        that method is therefore not honoured here.
 
         Args:
             workfile_path (str): Path to the locked workfile.
