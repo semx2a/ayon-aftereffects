@@ -8,8 +8,8 @@ from ayon_core.lib import (
     is_using_ayon_console,
 )
 from ayon_applications import PreLaunchHook, LaunchTypes
+from ayon_core.pipeline.workfile import resolve_launch_workfile_path
 from ayon_aftereffects import get_launch_script_path
-from ayon_aftereffects.launch_utils import resolve_workfile_path
 
 
 def get_launch_kwargs(kwargs):
@@ -71,7 +71,7 @@ class AEPrelaunchHook(PreLaunchHook):
             "run", script_path, executable_path
         )
         # Add workfile path if exists
-        workfile_path = resolve_workfile_path(self.data)
+        workfile_path = resolve_launch_workfile_path(self.data)
         if workfile_path:
             new_launch_args.append(workfile_path)
 

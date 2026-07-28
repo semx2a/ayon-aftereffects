@@ -43,8 +43,12 @@ class AfterEffectsHost(
 ):
     # 'WorkfileLockMixin' has to come before 'IWorkfileHost' so that the
     #   locking hooks win the method resolution order over the interface
-    #   defaults. Releasing the lock is wired in 'ProcessLauncher.exit'.
+    #   defaults.
     name = "aftereffects"
+
+    # 'ProcessLauncher.exit' calls 'release_workfile_lock', including when
+    #   After Effects died on its own. Without this the mixin stays inert.
+    workfile_lock_release_wired = True
 
     def __init__(self):
         self._stub = None
