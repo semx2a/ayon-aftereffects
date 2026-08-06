@@ -1,8 +1,21 @@
 from __future__ import annotations
 
-from qtpy import QtCore, QtWidgets
+import logging
+import time
+from concurrent.futures import Future, ThreadPoolExecutor
 
-from .scripts import ScriptItem, ScriptService
+from qtpy import QtCore, QtGui, QtWidgets
+
+from ayon_core.style import get_app_icon_path, load_stylesheet
+
+from .scripts import ScriptItem, ScriptRunResult, ScriptService
+
+log = logging.getLogger(__name__)
+
+# How long to keep waiting on After Effects before releasing the dialog.
+# The call cannot be cancelled, so this bounds the wait, not the work.
+RUN_TIMEOUT_SECONDS = 300.0
+POLL_INTERVAL_MS = 100
 
 
 class RunScriptsWindow(QtWidgets.QDialog):
@@ -18,7 +31,14 @@ class RunScriptsWindow(QtWidgets.QDialog):
         self._service = service
         self._items_by_id: dict[str, ScriptItem] = {}
 
+        # the dialog is cached and reused by AEHostToolsHelper, so the
+        # executor outlives a close and must not be shut down there
+        self._executor: ThreadPoolExecutor | None = None
+        self._future: Future | None = None
+        self._run_started_at = 0.0
+
         self.setWindowTitle("Run Scripts")
+        self.setWindowIcon(QtGui.QIcon(get_app_icon_path()))
         self.resize(720, 420)
 
         self._scripts_view = QtWidgets.QTreeWidget(self)
@@ -40,20 +60,28 @@ class RunScriptsWindow(QtWidgets.QDialog):
         header.setSectionResizeMode(2, QtWidgets.QHeaderView.ResizeToContents)
 
         self._status_label = QtWidgets.QLabel(self)
-        self._refresh_btn = QtWidgets.QPushButton("Refresh", self)
-        self._run_btn = QtWidgets.QPushButton("Run", self)
-        self._close_btn = QtWidgets.QPushButton("Close", self)
+        self._status_label.setWordWrap(True)
+
+        buttons_widget = QtWidgets.QWidget(self)
+        self._refresh_btn = QtWidgets.QPushButton("Refresh", buttons_widget)
+        self._run_btn = QtWidgets.QPushButton("Run", buttons_widget)
+        self._close_btn = QtWidgets.QPushButton("Close", buttons_widget)
         self._run_btn.setEnabled(False)
 
-        button_layout = QtWidgets.QHBoxLayout()
-        button_layout.addWidget(self._status_label, 1)
-        button_layout.addWidget(self._refresh_btn)
-        button_layout.addWidget(self._run_btn)
-        button_layout.addWidget(self._close_btn)
+        buttons_layout = QtWidgets.QHBoxLayout(buttons_widget)
+        buttons_layout.setContentsMargins(0, 0, 0, 0)
+        buttons_layout.setSpacing(10)
+        buttons_layout.addStretch(1)
+        buttons_layout.addWidget(self._refresh_btn, 0)
+        buttons_layout.addWidget(self._run_btn, 0)
+        buttons_layout.addWidget(self._close_btn, 0)
 
         layout = QtWidgets.QVBoxLayout(self)
-        layout.addWidget(self._scripts_view)
-        layout.addLayout(button_layout)
+        layout.setContentsMargins(15, 15, 15, 15)
+        layout.setSpacing(10)
+        layout.addWidget(self._scripts_view, 1)
+        layout.addWidget(self._status_label, 0)
+        layout.addWidget(buttons_widget, 0)
 
         self._refresh_btn.clicked.connect(self.refresh)
         self._run_btn.clicked.connect(self._on_run_clicked)
@@ -64,6 +92,15 @@ class RunScriptsWindow(QtWidgets.QDialog):
         self._scripts_view.itemDoubleClicked.connect(
             self._on_item_double_clicked
         )
+
+        self._poll_timer = QtCore.QTimer(self)
+        self._poll_timer.setInterval(POLL_INTERVAL_MS)
+        self._poll_timer.timeout.connect(self._on_poll_run)
+
+    def showEvent(self, event) -> None:
+        """Apply the AYON stylesheet once the dialog is shown."""
+        super().showEvent(event)
+        self.setStyleSheet(load_stylesheet())
 
     def refresh(self) -> None:
         """Reload the manual scripts from settings."""
@@ -116,12 +153,80 @@ class RunScriptsWindow(QtWidgets.QDialog):
 
     def _on_run_clicked(self) -> None:
         """Run the currently selected manual script."""
+        if self._future is not None:
+            return
+
         item = self._get_selected_item()
         if item is None:
             return
 
-        result = self._service.run_item(item)
-        self._status_label.setText(result.message)
+        if self._executor is None:
+            self._executor = ThreadPoolExecutor(
+                max_workers=1, thread_name_prefix="ayon-ae-run-scripts"
+            )
+
+        self._set_running(True, f"Running {item.name}...")
+        self._run_started_at = time.monotonic()
+        self._future = self._executor.submit(self._service.run_item, item)
+        self._poll_timer.start()
+
+    def _on_poll_run(self) -> None:
+        """Check on the running script without blocking the event loop."""
+        future = self._future
+        if future is None:
+            self._poll_timer.stop()
+            return
+
+        if future.done():
+            self._stop_waiting()
+            self._status_label.setText(self._result_message(future))
+            return
+
+        if time.monotonic() - self._run_started_at < RUN_TIMEOUT_SECONDS:
+            return
+
+        # a blocked websocket call cannot be cancelled, so let it finish in
+        # the background rather than hold the dialog hostage
+        self._stop_waiting()
+        self._status_label.setText(
+            f"After Effects did not respond within "
+            f"{int(RUN_TIMEOUT_SECONDS)}s. The script may still be running."
+        )
+
+    def _stop_waiting(self) -> None:
+        """Stop polling and hand the dialog back to the artist."""
+        self._poll_timer.stop()
+        self._future = None
+        self._set_running(False)
+
+    @staticmethod
+    def _result_message(future: Future) -> str:
+        """Status message for a finished run."""
+        try:
+            result: ScriptRunResult = future.result()
+        except Exception:
+            log.warning("Script run failed", exc_info=True)
+            return "Script run failed unexpectedly, see the log for details."
+
+        return result.message
+
+    def closeEvent(self, event) -> None:
+        """Never block on a running script when the dialog is closed."""
+        self._poll_timer.stop()
+        self._future = None
+        super().closeEvent(event)
+
+    def _set_running(self, running: bool, message: str = "") -> None:
+        """Disable input while a script runs."""
+        self._run_btn.setEnabled(not running)
+        self._refresh_btn.setEnabled(not running)
+        self._scripts_view.setEnabled(not running)
+
+        if running:
+            self._status_label.setText(message)
+            return
+
+        self._on_selection_changed()
 
     def _get_selected_item(self) -> ScriptItem | None:
         """Return the currently selected script item."""

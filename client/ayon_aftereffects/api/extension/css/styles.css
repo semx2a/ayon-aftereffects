@@ -1,24 +1,242 @@
-/*Your styles*/
+/*
+AYON panel styling.
 
- body {
-    margin: 10px;
+Colours are the AYON Qt design tokens from
+ayon-core/client/ayon_core/style/data.json, so the panel matches the rest of
+the AYON tooling instead of the host application.
+
+themeManager.js still injects After Effects' skin values into .hostFontSize
+and .hostFontFamily. Buttons keep those classes on purpose: type scales with
+the artist's AE UI setting while colour stays AYON's. Putting `hostElt` back
+on <body> hands background and text colour back to After Effects.
+
+Layout is pure CSS grid with auto-fit, so reflow happens in the layout engine
+with no JS and no measured breakpoints. After Effects only hands CEP panels a
+new viewport size when a drag is released, so there is nothing to hook for a
+live resize, but whatever size arrives is laid out correctly on arrival.
+*/
+
+:root {
+    --ayon-bg: #2C313A;
+    --ayon-button: rgb(67, 74, 86);
+    --ayon-button-hover: rgb(81, 86, 97);
+    --ayon-button-disabled: #434a56;
+    --ayon-font: #D3D8DE;
+    --ayon-font-hover: #F0F2F5;
+    --ayon-font-disabled: #5b6779;
+    --ayon-font-dim: #99A3B2;
+    --ayon-border: #373D48;
+    --ayon-focus: rgb(92, 173, 214);
+    --ayon-error: #AD2E2E;
+    --ayon-info: rgb(63, 98, 121);
+    --ayon-info-hover: rgb(81, 146, 181);
+    --ayon-radius: 3px;
+    --ayon-gap: 4px;
 }
 
+html {
+    height: 100%;
+}
+
+body {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    margin: 0;
+    padding: 10px;
+    box-sizing: border-box;
+    background: var(--ayon-bg);
+    color: var(--ayon-font);
+}
 
 #content {
-    margin-right:auto;
-    margin-left:auto;
-    vertical-align:middle;
-    width:100%;
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
 }
 
+/* ── Groups ──────────────────────────────────────────────────────────── */
 
-#btn_test{
+.group {
+    margin: 0 0 12px 0;
+}
+
+.group:last-of-type {
+    margin-bottom: 0;
+}
+
+.group-title {
+    margin: 0 0 6px 0;
+    padding-bottom: 4px;
+    border-bottom: 1px solid var(--ayon-border);
+    color: var(--ayon-font-dim);
+    font-size: 0.8em;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+}
+
+/*
+auto-fit collapses empty tracks, so a narrow panel gets one column and a
+wide one fills with as many as fit. No media queries, no JS.
+*/
+.group-items {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    /* grid-gap, not gap: CEP 9 is Chrome 61 and `gap` landed in 66 */
+    grid-gap: var(--ayon-gap);
+}
+
+/*
+The 150px track minimum cannot shrink, so a tightly docked panel would
+overflow sideways. min() would fix it but is Chrome 79, so drop to a single
+free-sizing column instead. Still pure CSS, still no JS on resize.
+*/
+@media (max-width: 220px) {
+    .group-items {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* ── Buttons ─────────────────────────────────────────────────────────── */
+
+#content button {
+    display: flex;
+    align-items: center;
     width: 100%;
+    /* grid items default to min-width:auto too, so the track cannot shrink */
+    min-width: 0;
+    padding: 6px 8px;
+    border: 0 solid transparent;
+    border-radius: var(--ayon-radius);
+    background: var(--ayon-button);
+    color: var(--ayon-font);
+    font-family: inherit;
+    text-align: left;
+    cursor: pointer;
+    transition: background-color 0.1s ease;
 }
 
+#content button:hover:not(:disabled) {
+    background: var(--ayon-button-hover);
+    color: var(--ayon-font-hover);
+}
 
+#content button:active:not(:disabled) {
+    background: var(--ayon-button);
+}
 
+#content button:focus {
+    outline: 1px solid var(--ayon-focus);
+    outline-offset: -1px;
+}
+
+#content button:disabled {
+    background: var(--ayon-button-disabled);
+    color: var(--ayon-font-disabled);
+    cursor: default;
+}
+
+.btn-icon {
+    flex: 0 0 auto;
+    width: 15px;
+    height: 15px;
+    /* margin, not flex `gap`: that is Chrome 84 and CEP 9 is Chrome 61 */
+    margin-right: 8px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    opacity: 0.85;
+}
+
+#content button:hover:not(:disabled) .btn-icon {
+    opacity: 1;
+}
+
+/*
+Labels elide rather than wrap, so a narrow column never grows a row.
+min-width:0 is required: a flex item defaults to min-width:auto and would
+otherwise refuse to shrink below its text, pushing the button out of track.
+*/
+.btn-label {
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+/* ── Connection banner ───────────────────────────────────────────────── */
+
+#connection {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    margin-top: 8px;
+    padding: 4px 5px;
+    border-radius: var(--ayon-radius);
+    background: var(--ayon-info);
+    color: var(--ayon-font-hover);
+    font-size: 0.85em;
+}
+
+/* display:flex would otherwise beat the UA rule for the hidden attribute */
+#connection[hidden] {
+    display: none;
+}
+
+#connection-text {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+#reconnect-button {
+    flex: 0 0 auto;
+    margin-left: 8px;
+    padding: 2px 8px;
+    border: 0 solid transparent;
+    border-radius: var(--ayon-radius);
+    background: var(--ayon-info-hover);
+    color: var(--ayon-font-hover);
+    font-family: inherit;
+    font-size: inherit;
+    cursor: pointer;
+}
+
+#reconnect-button:disabled {
+    opacity: 0.5;
+    cursor: default;
+}
+
+#reconnect-button:focus {
+    outline: 1px solid var(--ayon-focus);
+    outline-offset: -1px;
+}
+
+/* ── Status line ─────────────────────────────────────────────────────── */
+
+#status {
+    flex: 0 0 auto;
+    margin: 8px 0 0 0;
+    padding: 0;
+    color: var(--ayon-font-dim);
+    font-size: 0.85em;
+    word-wrap: break-word;
+}
+
+#status:empty {
+    display: none;
+}
+
+#status.is-error {
+    padding: 5px 6px;
+    border-radius: var(--ayon-radius);
+    background: var(--ayon-error);
+    color: var(--ayon-font-hover);
+}
 
 /*
 Those classes will be edited at runtime with values specified
@@ -38,14 +256,3 @@ by the settings of the CC application
 .hostBgdDark{}
 /*background color and font*/
 .hostElt{}
-
-
-.hostButton{
-    border:1px solid;
-    border-radius:2px;
-    height:20px;
-    vertical-align:bottom;
-    font-family:inherit;
-    color:inherit;
-    font-size:inherit;
-}

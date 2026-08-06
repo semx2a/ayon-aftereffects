@@ -2,218 +2,139 @@
 <html>
 <head>
 <meta charset="utf-8">
+<title>AYON</title>
 
 <link rel="stylesheet" href="css/topcoat-desktop-dark.min.css"/>
 <link  id="hostStyle" rel="stylesheet" href="css/styles.css"/>
 
-<style type="text/css">
-  html, iframe {
-    width: 100%;
-    height: 100%;
-    border: 0px;
-    margin: 0px;
-    overflow: hidden;
-  }
-  body {
-    width: 100%;
-    border: 0px;
-    margin: 0px;
-    overflow-y: auto;
-  }
-  button {width: 100%;}
-</style>
-
-<style>
-  button {width: 100%;}
-  body {margin:0; padding:0; height: 100%;}
-  html {height: 100%;}
-</style>
-
-<title></title>
-    <script src="js/libs/jquery-2.0.2.min.js"></script>
-
-    <script type=text/javascript>
-            $(function() {
-              $("a#workfiles-button").bind("click", function() {
-
-                RPC.call('AfterEffects.workfiles_route').then(function (data) {
-                }, function (error) {
-                    alert(error);
-                });
-              });
-            });
-    </script>
-
-    <script type=text/javascript>
-            $(function() {
-              $("a#version-up-workfile-button").bind("click", function() {
-
-                RPC.call('AfterEffects.version_up_workfile_route').then(function (data) {
-                }, function (error) {
-                    alert(error);
-                });
-              });
-            });
-    </script>
-
-    <script type=text/javascript>
-            $(function() {
-              $("a#loader-button").bind("click", function() {
-                RPC.call('AfterEffects.loader_route').then(function (data) {
-                }, function (error) {
-                    alert(error);
-                });
-              });
-            });
-    </script>
-
-    <script type=text/javascript>
-            $(function() {
-              $("a#publish-button").bind("click", function() {
-                RPC.call('AfterEffects.publish_route').then(function (data) {
-                }, function (error) {
-                    alert(error);
-                });
-              });
-            });
-    </script>
-
-    <script type=text/javascript>
-            $(function() {
-              $("a#sceneinventory-button").bind("click", function() {
-                RPC.call('AfterEffects.sceneinventory_route').then(function (data) {
-                }, function (error) {
-                    alert(error);
-                });
-              });
-            });
-    </script>
-
-    <script type=text/javascript>
-      $(function() {
-        $("a#setresolution-button").bind("click", function() {
-          RPC.call('AfterEffects.setresolution_route').then(function (data) {
-          }, function (error) {
-              alert(error);
-          });
-        });
-      });
-    </script>
-
-    <script type=text/javascript>
-      $(function() {
-        $("a#setframes-button").bind("click", function() {
-          RPC.call('AfterEffects.setframes_route').then(function (data) {
-          }, function (error) {
-              alert(error);
-          });
-        });
-      });
-    </script>
-
-    <script type=text/javascript>
-      $(function() {
-        $("a#setall-button").bind("click", function() {
-          RPC.call('AfterEffects.setall_route').then(function (data) {
-          }, function (error) {
-              alert(error);
-          });
-        });
-      });
-    </script>
-
-    <script type=text/javascript>
-      $(function() {
-        $("a#create-placeholder-button").bind("click", function() {
-          RPC.call('AfterEffects.create_placeholder_route').then(function (data) {
-          }, function (error) {
-              alert(error);
-          });
-        });
-      });
-    </script>
-
-    <script type=text/javascript>
-      $(function() {
-        $("a#update-placeholder-button").bind("click", function() {
-          RPC.call('AfterEffects.update_placeholder_route').then(function (data) {
-          }, function (error) {
-              alert(error);
-          });
-        });
-      });
-    </script>
-
-    <script type=text/javascript>
-      $(function() {
-        $("a#build-workfile-button").bind("click", function() {
-          RPC.call('AfterEffects.build_workfile_template_route').then(function (data) {
-          }, function (error) {
-              alert(error);
-          });
-        });
-      });
-    </script>
-
-    <script type=text/javascript>
-      $(function() {
-        $("a#script-editor-button").bind("click", function() {
-          RPC.call('AfterEffects.script_editor_route').then(function (data) {
-          }, function (error) {
-              alert(error);
-          });
-        });
-      });
-    </script>
-
-    <script type=text/javascript>
-      $(function() {
-        $("a#run-scripts-button").bind("click", function() {
-          RPC.call('AfterEffects.run_scripts_route').then(function (data) {
-          }, function (error) {
-              alert(error);
-          });
-        });
-      });
-    </script>
-
-    <script type=text/javascript>
-            $(function() {
-              $("a#experimental-button").bind("click", function() {
-                RPC.call('AfterEffects.experimental_tools_route').then(function (data) {
-                }, function (error) {
-                    alert(error);
-                });
-              });
-            });
-    </script>
-
+<script src="js/libs/jquery-2.0.2.min.js"></script>
 
 </head>
 
-<body class="hostElt">
+<body>
+
+    <!-- icon sprite, referenced by <use> so each glyph is defined once -->
+    <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+        <symbol id="i-folder" viewBox="0 0 24 24">
+            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+        </symbol>
+        <symbol id="i-version-up" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="8"/><polyline points="8 12 12 8 16 12"/>
+        </symbol>
+        <symbol id="i-load" viewBox="0 0 24 24">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+        </symbol>
+        <symbol id="i-publish" viewBox="0 0 24 24">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+        </symbol>
+        <symbol id="i-manage" viewBox="0 0 24 24">
+            <polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/>
+        </symbol>
+        <symbol id="i-resolution" viewBox="0 0 24 24">
+            <path d="M6.13 1L6 16a2 2 0 0 0 2 2h15"/><path d="M1 6.13L16 6a2 2 0 0 1 2 2v15"/>
+        </symbol>
+        <symbol id="i-frames" viewBox="0 0 24 24">
+            <rect x="2" y="2" width="20" height="20" rx="2"/><line x1="7" y1="2" x2="7" y2="22"/><line x1="17" y1="2" x2="17" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/>
+        </symbol>
+        <symbol id="i-apply-all" viewBox="0 0 24 24">
+            <polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+        </symbol>
+        <symbol id="i-create" viewBox="0 0 24 24">
+            <rect x="3" y="3" width="18" height="18" rx="2"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/>
+        </symbol>
+        <symbol id="i-update" viewBox="0 0 24 24">
+            <polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+        </symbol>
+        <symbol id="i-build" viewBox="0 0 24 24">
+            <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>
+        </symbol>
+        <symbol id="i-code" viewBox="0 0 24 24">
+            <polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/>
+        </symbol>
+        <symbol id="i-run" viewBox="0 0 24 24">
+            <polygon points="5 3 19 12 5 21 5 3"/>
+        </symbol>
+        <symbol id="i-experimental" viewBox="0 0 24 24">
+            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+        </symbol>
+    </svg>
 
     <div id="content">
 
-        <div><a href=# id=workfiles-button><button class="hostFontSize">Workfiles...</button></a></div>
-        <div><a href=# id=version-up-workfile-button><button class="hostFontSize">Version Up Workfile</button></a></div>
-        <div><a href=# id=loader-button><button class="hostFontSize">Load...</button></a></div>
-        <div><a href=# id=publish-button><button class="hostFontSize">Publish...</button></a></div>
-        <div><a href=# id=sceneinventory-button><button class="hostFontSize">Manage...</button></a></div>
-        <div><a href=# id=separator0><button class="hostFontSize">&nbsp;</button></a></div>
-        <div><a href=# id=setresolution-button><button class="hostFontSize">Set Resolution</button></a></div>
-        <div><a href=# id=setframes-button><button class="hostFontSize">Set Frame Range</button></a></div>
-        <div><a href=# id=setall-button><button class="hostFontSize">Apply All Settings</button></a></div>
-        <div><a href=# id=separator1><button class="hostFontSize">&nbsp;</button></a></div>
-        <div><a href=# id=create-placeholder-button><button class="hostFontSize">Create placeholder</button></a></div>
-        <div><a href=# id=update-placeholder-button><button class="hostFontSize">Update placeholder</button></a></div>
-        <div><a href=# id=build-workfile-button><button class="hostFontSize">Build Workfile from template</button></a></div>
-        <div><a href=# id=separator3><button class="hostFontSize">&nbsp;</button></a></div>
-        <div><a href=# id=script-editor-button><button class="hostFontSize">Script Editor</button></a></div>
-        <div><a href=# id=run-scripts-button><button class="hostFontSize">Run Scripts...</button></a></div>
-        <div><a href=# id=experimental-button><button class="hostFontSize">Experimental Tools...</button></a></div>
+        <section class="group">
+            <h2 class="group-title">Pipeline</h2>
+            <div class="group-items">
+                <button type="button" class="hostFontSize" id="workfiles-button"
+                        data-route="workfiles_route" data-busy="Opening...">
+                    <svg class="btn-icon"><use href="#i-folder"/></svg><span class="btn-label">Workfiles...</span></button>
+                <button type="button" class="hostFontSize" id="version-up-workfile-button"
+                        data-route="version_up_workfile_route" data-busy="Versioning up...">
+                    <svg class="btn-icon"><use href="#i-version-up"/></svg><span class="btn-label">Version Up Workfile</span></button>
+                <button type="button" class="hostFontSize" id="loader-button"
+                        data-route="loader_route" data-busy="Opening...">
+                    <svg class="btn-icon"><use href="#i-load"/></svg><span class="btn-label">Load...</span></button>
+                <button type="button" class="hostFontSize" id="publish-button"
+                        data-route="publish_route" data-busy="Opening...">
+                    <svg class="btn-icon"><use href="#i-publish"/></svg><span class="btn-label">Publish...</span></button>
+                <button type="button" class="hostFontSize" id="sceneinventory-button"
+                        data-route="sceneinventory_route" data-busy="Opening...">
+                    <svg class="btn-icon"><use href="#i-manage"/></svg><span class="btn-label">Manage...</span></button>
+            </div>
+        </section>
+
+        <section class="group">
+            <h2 class="group-title">Scene Settings</h2>
+            <div class="group-items">
+                <button type="button" class="hostFontSize" id="setresolution-button"
+                        data-route="setresolution_route" data-busy="Applying...">
+                    <svg class="btn-icon"><use href="#i-resolution"/></svg><span class="btn-label">Set Resolution</span></button>
+                <button type="button" class="hostFontSize" id="setframes-button"
+                        data-route="setframes_route" data-busy="Applying...">
+                    <svg class="btn-icon"><use href="#i-frames"/></svg><span class="btn-label">Set Frame Range</span></button>
+                <button type="button" class="hostFontSize" id="setall-button"
+                        data-route="setall_route" data-busy="Applying...">
+                    <svg class="btn-icon"><use href="#i-apply-all"/></svg><span class="btn-label">Apply All Settings</span></button>
+            </div>
+        </section>
+
+        <section class="group">
+            <h2 class="group-title">Templates</h2>
+            <div class="group-items">
+                <button type="button" class="hostFontSize" id="create-placeholder-button"
+                        data-route="create_placeholder_route" data-busy="Creating...">
+                    <svg class="btn-icon"><use href="#i-create"/></svg><span class="btn-label">Create Placeholder</span></button>
+                <button type="button" class="hostFontSize" id="update-placeholder-button"
+                        data-route="update_placeholder_route" data-busy="Updating...">
+                    <svg class="btn-icon"><use href="#i-update"/></svg><span class="btn-label">Update Placeholder</span></button>
+                <button type="button" class="hostFontSize" id="build-workfile-button"
+                        data-route="build_workfile_template_route" data-busy="Building...">
+                    <svg class="btn-icon"><use href="#i-build"/></svg><span class="btn-label">Build Workfile from template</span></button>
+            </div>
+        </section>
+
+        <section class="group">
+            <h2 class="group-title">Scripts</h2>
+            <div class="group-items">
+                <button type="button" class="hostFontSize" id="script-editor-button"
+                        data-route="script_editor_route" data-busy="Opening...">
+                    <svg class="btn-icon"><use href="#i-code"/></svg><span class="btn-label">Script Editor</span></button>
+                <button type="button" class="hostFontSize" id="run-scripts-button"
+                        data-route="run_scripts_route" data-busy="Opening...">
+                    <svg class="btn-icon"><use href="#i-run"/></svg><span class="btn-label">Run Scripts...</span></button>
+                <button type="button" class="hostFontSize" id="experimental-button"
+                        data-route="experimental_tools_route" data-busy="Opening...">
+                    <svg class="btn-icon"><use href="#i-experimental"/></svg><span class="btn-label">Experimental Tools...</span></button>
+            </div>
+        </section>
 
     </div>
+
+    <div id="connection" class="hostFontSize" role="status" aria-live="polite" hidden>
+        <span id="connection-text"></span>
+        <button type="button" id="reconnect-button">Retry now</button>
+    </div>
+
+    <p id="status" role="status" aria-live="polite"></p>
 
     <!-- <script src="js/libs/PlayerDebugMode"></script> -->
     <script src="js/libs/wsrpc.js"></script>
@@ -223,6 +144,123 @@
     <script src="js/themeManager.js"></script>
     <script src="js/main.js"></script>
 
+    <script type="text/javascript">
+        /**
+         * Bind every button carrying a data-route to its RPC route.
+         *
+         * A route call blocks with no timeout and retries three times on a
+         * dropped socket, so a click can take ~18s. The button is disabled
+         * and relabelled meanwhile, otherwise artists click again and fire
+         * the route twice. Only the label span is rewritten, never the
+         * button itself, or the icon would be wiped out with it.
+         */
+        $(function () {
+            var $status = $("#status");
+            var $connection = $("#connection");
+            var $connectionText = $("#connection-text");
+            var $reconnect = $("#reconnect-button");
+            var DISCONNECTED = "Not connected to After Effects.";
+
+            function setStatus(message, isError) {
+                $status.text(message || "").toggleClass("is-error", !!isError);
+            }
+
+            /**
+             * wsrpc reconnects on its own every 5s (main.js sets the
+             * interval). None of this replaces that; it only makes the state
+             * visible and lets the artist skip the wait.
+             */
+            function rpcState() {
+                return window.RPC && RPC.state ? RPC.state() : "CLOSED";
+            }
+
+            function showConnection(text, canRetry) {
+                $connectionText.text(text);
+                $reconnect.prop("disabled", !canRetry);
+                $connection.prop("hidden", false);
+            }
+
+            $reconnect.on("click", function () {
+                if (rpcState() !== "CLOSED") {
+                    return;
+                }
+                showConnection("Reconnecting...", false);
+                try {
+                    RPC.connect();
+                } catch (error) {
+                    showConnection("Reconnect failed: " + error, true);
+                    return;
+                }
+                // connect() replaces the socket outright and wsrpc may have
+                // its own retry already pending, so stay disabled past one
+                // reconnect cycle rather than stacking a second socket
+                window.setTimeout(function () {
+                    if (rpcState() !== "OPEN") {
+                        showConnection(DISCONNECTED, true);
+                    }
+                }, 6000);
+            });
+
+            // main.js builds RPC asynchronously, so wait for it to exist
+            var wiring = window.setInterval(function () {
+                if (!window.RPC || !RPC.addEventListener) {
+                    return;
+                }
+                window.clearInterval(wiring);
+
+                RPC.addEventListener("onconnect", function () {
+                    $connection.prop("hidden", true);
+                });
+                RPC.addEventListener("onclose", function () {
+                    showConnection(DISCONNECTED, true);
+                });
+                RPC.addEventListener("onerror", function () {
+                    showConnection(DISCONNECTED, true);
+                });
+
+                // CONNECTING is the normal state on open, do not alarm
+                if (rpcState() === "CLOSED") {
+                    showConnection(DISCONNECTED, true);
+                }
+            }, 250);
+
+            $("#content button[data-route]").each(function () {
+                var $button = $(this);
+                var $label = $button.find(".btn-label");
+                var label = $label.text();
+
+                // labels elide in a narrow panel, so keep the full text
+                $button.attr("title", label);
+
+                $button.on("click", function () {
+                    if ($button.prop("disabled")) {
+                        return;
+                    }
+                    // without this the call burns ~18s of retries first
+                    if (rpcState() !== "OPEN") {
+                        setStatus(DISCONNECTED, true);
+                        return;
+                    }
+                    setStatus("");
+                    $button.prop("disabled", true);
+                    $label.text($button.data("busy") || "Working...");
+
+                    function done() {
+                        $button.prop("disabled", false);
+                        $label.text(label);
+                    }
+
+                    RPC.call("AfterEffects." + $button.data("route")).then(
+                        done,
+                        function (error) {
+                            done();
+                            setStatus(error, true);
+                        }
+                    );
+                });
+            });
+        });
+    </script>
 
 </body>
 </html>
